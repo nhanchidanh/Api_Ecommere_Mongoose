@@ -1,8 +1,5 @@
 const { verify, decode } = require("jsonwebtoken");
-const {
-  generateAccessToken,
-  generateRefreshToken,
-} = require("../middlewares/jwt");
+const { generateAccessToken, generateRefreshToken } = require("../utils/jwt");
 const userModel = require("../models/user.model");
 const asyncHandler = require("express-async-handler");
 
