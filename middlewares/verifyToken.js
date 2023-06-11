@@ -1,5 +1,6 @@
 const expressAsyncHandler = require("express-async-handler");
 const { verify } = require("jsonwebtoken");
+const ApiError = require("../utils/api-error");
 
 // Check login
 exports.verifyAccessToken = expressAsyncHandler(async (req, res, next) => {
@@ -23,4 +24,11 @@ exports.verifyAccessToken = expressAsyncHandler(async (req, res, next) => {
       message: "Required authentication!",
     });
   }
+});
+
+exports.isAdmin = expressAsyncHandler((req, res, next) => {
+  const { role } = req.user;
+  // console.log(role);
+  if (role !== "admin") throw new ApiError(401, "Require Admin role");
+  next();
 });

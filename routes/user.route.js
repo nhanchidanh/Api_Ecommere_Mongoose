@@ -2,17 +2,33 @@ const {
   registerController,
   loginController,
   getCurrentUserController,
-  refreshAccessToken,
+  refreshAccessTokenController,
   logoutController,
+  forgotPasswordController,
+  resetPasswordController,
+  getUsersController,
+  deleteUserController,
+  updateUserController,
+  updateUserByAdminController,
 } = require("../controllers/user.controller");
-const { verifyAccessToken } = require("../middlewares/verifyToken");
+const { verifyAccessToken, isAdmin } = require("../middlewares/verifyToken");
 
 const userRoutes = require("express").Router();
 
 userRoutes.post("/register", registerController);
 userRoutes.post("/login", loginController);
 userRoutes.get("/current", [verifyAccessToken], getCurrentUserController);
-userRoutes.post("/refreshtoken", refreshAccessToken);
+userRoutes.post("/refreshtoken", refreshAccessTokenController);
 userRoutes.put("/logout", logoutController);
+userRoutes.get("/forgot-password", forgotPasswordController);
+userRoutes.put("/reset-password", resetPasswordController);
+userRoutes.get("/", [verifyAccessToken, isAdmin], getUsersController);
+userRoutes.delete("/:_id", [verifyAccessToken, isAdmin], deleteUserController);
+userRoutes.put("/current", [verifyAccessToken], updateUserController);
+userRoutes.put(
+  "/:_id",
+  [verifyAccessToken, isAdmin],
+  updateUserByAdminController
+);
 
 module.exports = userRoutes;

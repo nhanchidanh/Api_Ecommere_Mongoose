@@ -1,6 +1,6 @@
 const { genSaltSync, hashSync, compareSync } = require("bcrypt");
 const mongoose = require("mongoose"); // Erase if already required
-
+const crypto = require("crypto");
 // Declare the Schema of the Mongo model
 var userSchema = new mongoose.Schema(
   {
@@ -72,6 +72,19 @@ userSchema.pre("save", async function (next) {
 userSchema.methods = {
   isCorrectPassword: function (password) {
     return compareSync(password, this.password);
+  },
+
+  createPasswordChangedToken: function () {
+    //create ramdom a string length 32 hex (a-z 0-9)
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    this.passwordResetToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    this.passwordResetExpires = Date.now() + 15 * 60 * 1000;
+
+    return resetToken;
   },
 };
 

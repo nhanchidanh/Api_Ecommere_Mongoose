@@ -5,6 +5,7 @@ const initRoutes = (app) => {
 
   app.use(notFound);
   app.use(errorHandler);
+  // app.use(internalServerError);
 };
 
 module.exports = initRoutes;
