@@ -6,3 +6,5 @@
 - Client gui api + token
 - check token match voi token ma server gui mail hay khong
 - Server tien hanh doi password cho client
+
+-//Những route có params thì nên để dưới

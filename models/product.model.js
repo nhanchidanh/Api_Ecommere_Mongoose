@@ -1,5 +1,5 @@
 const mongoose = require("mongoose"); // Erase if already required
-
+const mongoosePaginate = require("mongoose-paginate-v2");
 // Declare the Schema of the Mongo model
 var productSchema = new mongoose.Schema(
   {
@@ -61,6 +61,8 @@ var productSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+productSchema.plugin(mongoosePaginate);
 
 //Export the model
 module.exports = mongoose.model("Product", productSchema);

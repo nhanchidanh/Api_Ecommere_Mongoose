@@ -35,14 +35,60 @@ const getProduct = expressAsyncHandler(async (req, res) => {
 });
 
 // Get all product
-// Filtering, sorting & pagination
+
 const getProducts = expressAsyncHandler(async (req, res) => {
-  const products = await productModel.find();
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 5;
+  const filter = req.query.filter || {};
+
+  //Filter theo giá
+  if (req.query.minPrice && req.query.maxPrice) {
+    filter.price = { $gte: req.query.minPrice, $lte: req.query.maxPrice };
+  } else if (req.query.minPrice) {
+    filter.price = { $gte: req.query.minPrice };
+  } else if (req.query.maxPrice) {
+    filter.price = { $lte: req.query.maxPrice };
+  }
+
+  // Filter theo tên sản phẩm
+  if (req.query.title) {
+    filter.title = { $regex: req.query.title, $options: "i" };
+  }
+
+  // Sort theo các trường: title, -title,...
+  const sort = {};
+  if (req.query.sort) {
+    const sortFields = req.query.sort.split(",");
+    sortFields.forEach((sortField) => {
+      const direction = sortField.startsWith("-") ? -1 : 1;
+      const field = sortField.replace(/^-/, "");
+      sort[field] = direction;
+    });
+  }
+
+  //Limit field: title, brand,...
+  let select;
+  if (req.query.select) {
+    //console.log(req.query.select);
+    select = req.query.select.replace(/,/g, " ");
+  }
+
+  const options = {
+    page,
+    limit,
+    sort,
+    select,
+  };
+
+  //paginate la thư viện hỗ trợ phân trang kèm query và sort,select trong option
+  const products = await productModel.paginate(filter, options);
   return res.status(200).json({
-    success: products ? true : false,
-    productDatas: products ? products : "Cannot get products",
+    success: true,
+    ...products,
   });
 });
+
+// Update prodcut
 const updateProduct = expressAsyncHandler(async (req, res) => {
   const { pid } = req.params;
   if (req.body && req.body.title) req.body.slug = slugify(req.body.title);
@@ -54,6 +100,8 @@ const updateProduct = expressAsyncHandler(async (req, res) => {
     updatedProduct: updatedProduct ? updatedProduct : "Cannot update product",
   });
 });
+
+// Delete product
 const deleteProduct = expressAsyncHandler(async (req, res) => {
   const { pid } = req.params;
   const deletedProduct = await productModel.findByIdAndDelete(pid);
@@ -63,10 +111,73 @@ const deleteProduct = expressAsyncHandler(async (req, res) => {
   });
 });
 
+// Rating: start, infoUser, commment
+const ratingProduct = expressAsyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  // console.log(_id);
+
+  const { star, comment, pid } = req.body;
+  if (!star || !pid) {
+    throw new ApiError(400, "Missing inputs");
+  }
+
+  // Lấy ra thông tin sản phẩm gồm có ratings
+  const product = await productModel.findById(pid);
+
+  // Kiểm tra xem sản phẩm đã được đánh giá bởi cùng 1 user hay khác user
+  const checkRating = product?.ratings?.find(
+    (item) => item?.postedBy.toString() === userId //postedBy là một ObjectId nên phải chuyển về dạng String để so sánh với userId
+  );
+  if (checkRating) {
+    // update star and comment
+    console.log("Đã đánh giá, chỉ cần cập nhật lại rating");
+    await productModel.updateOne(
+      {
+        ratings: { $elemMatch: checkRating },
+      },
+      { $set: { "ratings.$.star": star, "ratings.$.comment": comment } },
+      { new: true }
+    );
+  } else {
+    // Add star and comment
+    console.log("Chưa đánh giá, tạo mới rating");
+    await productModel.findByIdAndUpdate(
+      pid,
+      {
+        $push: { ratings: { star, comment, postedBy: userId } },
+      },
+      { new: true }
+    );
+  }
+
+  // Product sau khi cập nhật
+  const updatedProduct = await productModel.findById(pid);
+  // Số người đánh giá
+  ratingCount = updatedProduct.ratings?.length;
+  //Tổng số sao đánh giá
+  const sumRatings = updatedProduct?.ratings?.reduce(
+    (sum, item) => sum + +item?.star,
+    0
+  );
+
+  // tính tổng và làm tròn bằng cách * 10 ,/ 10
+  updatedProduct.totalRatings =
+    Math.round((sumRatings * 10) / ratingCount) / 10;
+
+  await updatedProduct.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "OK",
+    updatedProduct,
+  });
+});
+
 module.exports = {
   createProduct,
   getProduct,
   getProducts,
   updateProduct,
   deleteProduct,
+  ratingProduct,
 };
