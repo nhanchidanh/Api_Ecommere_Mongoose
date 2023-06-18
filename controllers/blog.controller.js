@@ -153,10 +153,45 @@ const disLikeBlog = expressAsyncHandler(async (req, res) => {
   }
 });
 
+// Get one blog and increse numberView
+const getBlog = expressAsyncHandler(async (req, res) => {
+  const { bid } = req.params;
+
+  if (!bid) throw new ApiError(400, "Missing inputs");
+
+  const blog = await blogModel
+    .findByIdAndUpdate(bid, { $inc: { numberViews: 1 } }, { new: true })
+    .populate("likes", "lastname")
+    .populate("disLikes", "lastname");
+
+  return res.status(blog ? 200 : 500).json({
+    success: blog ? true : false,
+    message: blog ? "Ok" : "Blog not found!",
+    blog,
+  });
+});
+
+const deleteBlog = expressAsyncHandler(async (req, res) => {
+  const { bid } = req.params;
+
+  if (!bid) throw new ApiError(400, "Missing inputs");
+
+  const blog = await blogModel.findOneAndDelete(bid);
+  if (!blog) throw new ApiError(404, "Blog not found!");
+
+  return res.status(200).json({
+    success: true,
+    message: "Deleted",
+    blog,
+  });
+});
+
 module.exports = {
   createBlog,
   updateBlog,
   getBlogs,
   likeBlog,
   disLikeBlog,
+  getBlog,
+  deleteBlog,
 };
