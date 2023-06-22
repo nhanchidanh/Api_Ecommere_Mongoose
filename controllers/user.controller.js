@@ -261,3 +261,20 @@ exports.updateUserByAdminController = asyncHandler(async (req, res) => {
     updatedUser,
   });
 });
+
+exports.updateUserAddress = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  if (!req.body.address) throw new ApiError(400, "Missing inputs");
+
+  const response = await userModel.findByIdAndUpdate(
+    _id,
+    { $push: { address: req.body.address } },
+    { new: true }
+  );
+  if (!response) throw new ApiError(404, "User not found");
+
+  return res.json({
+    success: true,
+    updatedUser: response,
+  });
+});

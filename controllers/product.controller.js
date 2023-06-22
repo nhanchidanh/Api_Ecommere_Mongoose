@@ -2,6 +2,7 @@ const expressAsyncHandler = require("express-async-handler");
 const productModel = require("../models/product.model");
 const { default: slugify } = require("slugify");
 const ApiError = require("../utils/api-error");
+const userModel = require("../models/user.model");
 
 // Create product?
 
@@ -173,6 +174,65 @@ const ratingProduct = expressAsyncHandler(async (req, res) => {
   });
 });
 
+//Upload file to cloudinary
+const uploadImageProduct = expressAsyncHandler(async (req, res) => {
+  const { pid } = req.params;
+  if (!pid || !req.files) throw new ApiError(400, "Missing inputs");
+
+  const response = await productModel.findByIdAndUpdate(
+    pid,
+    {
+      $push: { images: { $each: req.files.map((item) => item?.path) } }, //$each: loop qua mỗi phtử. vì hàm map trả ra một mảng mới
+    },
+    { new: true }
+  );
+
+  if (!response) throw new ApiError(404, "Product not found");
+
+  return res.status(200).json({
+    status: true,
+    updatedProduct: response,
+  });
+});
+
+//Update cart
+const updateCart = expressAsyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { pid, quantity, color } = req.body;
+
+  if (!pid || !quantity || !color) throw new ApiError(400, "Missing inputs");
+
+  const user = await userModel.findById(userId).select("cart");
+
+  //Check id product và color với inputs
+  const checkPidAndColor = user?.cart?.find(
+    (item) => item?.productId.toString() === pid && item?.color === color
+  );
+
+  if (checkPidAndColor) {
+    //Nếu trùng => update quantity
+    const response = await userModel.updateOne(
+      { cart: { $elemMatch: checkPidAndColor } },
+      { $set: { "cart.$.quantity": quantity } },
+      { new: true }
+    );
+    return res.json({
+      success: response ? true : false,
+      rs: response || "Something went wrong",
+    });
+  } else {
+    //Nếu không trùng => thêm sản phẩm vào cart
+    const response = await userModel.findByIdAndUpdate(
+      userId,
+      {
+        $push: { cart: { productId: pid, quantity, color } },
+      },
+      { new: true }
+    );
+    return res.json(response?.cart);
+  }
+});
+
 module.exports = {
   createProduct,
   getProduct,
@@ -180,4 +240,6 @@ module.exports = {
   updateProduct,
   deleteProduct,
   ratingProduct,
+  uploadImageProduct,
+  updateCart,
 };

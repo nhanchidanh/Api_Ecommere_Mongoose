@@ -10,6 +10,7 @@ const {
   deleteUserController,
   updateUserController,
   updateUserByAdminController,
+  updateUserAddress,
 } = require("../controllers/user.controller");
 const { verifyAccessToken, isAdmin } = require("../middlewares/verifyToken");
 
@@ -20,6 +21,12 @@ userRoutes.post("/login", loginController);
 userRoutes.get("/current", [verifyAccessToken], getCurrentUserController);
 userRoutes.post("/refreshtoken", refreshAccessTokenController);
 userRoutes.put("/logout", logoutController);
+userRoutes.put(
+  "/update-address/",
+  [verifyAccessToken, isAdmin],
+  updateUserAddress
+);
+
 userRoutes.get("/forgot-password", forgotPasswordController);
 userRoutes.put("/reset-password", resetPasswordController);
 userRoutes.get("/", [verifyAccessToken, isAdmin], getUsersController);

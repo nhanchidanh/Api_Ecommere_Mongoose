@@ -186,6 +186,26 @@ const deleteBlog = expressAsyncHandler(async (req, res) => {
   });
 });
 
+const uploadImageBlog = expressAsyncHandler(async (req, res) => {
+  const { bid } = req.params;
+  if (!bid || !req.file) throw new ApiError(400, "Missing inputs");
+
+  const response = await blogModel.findByIdAndUpdate(
+    bid,
+    {
+      image: req.file.path,
+    },
+    { new: true }
+  );
+
+  if (!response) throw new ApiError(404, "Blog not found");
+
+  return res.status(200).json({
+    status: true,
+    updatedBlog: response,
+  });
+});
+
 module.exports = {
   createBlog,
   updateBlog,
@@ -194,4 +214,5 @@ module.exports = {
   disLikeBlog,
   getBlog,
   deleteBlog,
+  uploadImageBlog,
 };

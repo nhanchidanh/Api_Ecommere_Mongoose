@@ -1,3 +1,4 @@
+const uploadCloud = require("../config/cloudinary.config");
 const {
   createBlog,
   updateBlog,
@@ -6,6 +7,7 @@ const {
   disLikeBlog,
   getBlog,
   deleteBlog,
+  uploadImageBlog,
 } = require("../controllers/blog.controller");
 const { verifyAccessToken, isAdmin } = require("../middlewares/verifyToken");
 
@@ -18,6 +20,12 @@ blogRoutes.delete("/:bid", [verifyAccessToken, isAdmin], deleteBlog);
 blogRoutes.put("/:bid", [verifyAccessToken, isAdmin], updateBlog);
 blogRoutes.put("/like/:bid", [verifyAccessToken], likeBlog);
 blogRoutes.put("/dislike/:bid", [verifyAccessToken], disLikeBlog);
+blogRoutes.put(
+  "/upload-image/:bid",
+  [verifyAccessToken, isAdmin],
+  uploadCloud.single("image"),
+  uploadImageBlog
+);
 
 module.exports = blogRoutes;
 //Những route có params thì nên để dưới
